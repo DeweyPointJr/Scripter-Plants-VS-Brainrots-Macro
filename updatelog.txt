@@ -1,0 +1,5 @@
+Version Release1.1
+
+Bug Fixes:
+ - Fixed not buying all shop items
+ - Fixed camera not zooming all the way out
