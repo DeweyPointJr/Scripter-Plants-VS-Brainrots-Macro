@@ -1,5 +1,5 @@
-Version Release1.1
+Version Cards1.0
 
-Bug Fixes:
- - Fixed not buying all shop items
- - Fixed camera not zooming all the way out
+Additions:
+ - Added auto Hit List
+ - Added auto align camera

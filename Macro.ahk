@@ -11,6 +11,8 @@ global RobloxWindow
 global iniFile := A_ScriptDir "\config.ini"
 
 global AutoCollectMoney
+global AutoAlignCamera
+global AutoHitList
 
 global doubleScrolls := [8, 10, 12, 14]
 
@@ -43,7 +45,7 @@ global plants := ["Cactus", "Strawberry", "Pumpkin", "Sunflower", "Dragon Fruit"
 global gears := ["Water Bucket", "Frost Grenade", "Banana Gun", "Frost Blower", "Carrot Launcher"]
 
 ; FUNCTIONS
-ClickRelative(relX, relY) {
+ClickRelative(relX, relY, coord := 0) {
     SendMode Event
     ; Get window position and size
     WinGetPos, X, Y, W, H, Roblox
@@ -52,21 +54,33 @@ ClickRelative(relX, relY) {
     }
 
     ; Calculate absolute coordinates
-    clickX := Round(X +(W * relX))
-    clickY := Round(Y + (H * relY))
-    clickY += 3
+    clickX := 0
+    clickY := 0
+    if (coord = 1) {
+        clickX := Round((relX/1936)*W)
+        clickY := Round((relY/1056)*H)
+    } else if (coord = 2) {
+        clickX := relX
+        clickY := relY
+        MouseMove, %relX%, %relY%, 3
+    } else {
+        clickX := Round(X +(W * relX))
+        clickY := Round(Y + (H * relY))
+        clickY += 3
+    }
+    
 
     ; Calculate where to move the mouse to
 
     ; Perform the click
-    MouseMove, %clickX%, %clickY%, 5
+    MouseMove, %clickX%, %clickY%, 3
     Click ;, %clickX%, %clickY%
-    Sleep, 50
+    Sleep, 10
     SendMode Input
 }
 
 CheckForUpdate() { 
-    currentVersion := "Release1.0" ; <-- Set your current version here 
+    currentVersion := "Cards1.0" ; <-- Set your current version here 
     latestURL := "https://api.github.com/repos/DeweyPointJr/Scripter-Plants-VS-Brainrots-Macro/releases/latest" 
     whr := ComObjCreate("WinHttp.WinHttpRequest.5.1") 
     whr.Open("GET", latestURL, false) 
@@ -203,7 +217,7 @@ BuyFromShop(shop) {
             if (y) {
                 ToolTip, Buying %item%
                 Loop, 25 {
-                    ClickRelative(0.48, (y/1056))
+                    ClickRelative(929, y, 1)
                     Sleep, 60
                 }
             }
@@ -229,6 +243,9 @@ MainLoop:
         WinActivate, ahk_id %RobloxWindow%
 
         ; Roblox is active. Start main macro actions.
+
+        ; Make sure camera is aligned correctly
+        Gosub, AutoAlignCameraLabel
         
         ; Check if any plants are selected (by reading config.ini where SavePlants writes them)
         anyPlantsSelected := false
@@ -256,6 +273,12 @@ MainLoop:
             Gosub, GearShopLabel
         }
 
+        ; Check if it should claim hit list rewards
+        IniRead, AutoHitList, config.ini, Settings, AutoHitList, 0
+        if (AutoHitList) {
+            Gosub, HitListLabel
+        }
+
 
         ; Collect Money
         IniRead, AutoCollectMoney, config.ini, Settings, AutoCollectMoney, 0
@@ -277,7 +300,7 @@ MainGui:
     Gui, New, +Resize, Scripter Macro
 
     ; Title label at the top
-    Gui, Add, Text, w180 h30 Center vTitleText, Scripter Plants VS Brainrots Macro [RELASE]
+    Gui, Add, Text, w180 h30 Center vTitleText, Scripter Plants VS Brainrots Macro [CARDS]
 
     ; Buttons stacked vertically
     Gui, Add, Button, w180 h40 gPlantsGui, Plants
@@ -370,8 +393,18 @@ SettingsGui:
     Gui, Tab, 1
     Gui, Add, Text, x20 y50, Auto Collect Money:
     IniRead, AutoCollectMoney, config.ini, Settings, AutoCollectMoney, 0
-    Gui, Add, Checkbox, vAutoCollectMoney x150 y48
+    Gui, Add, Checkbox, vAutoCollectMoney x120 y50
     GuiControl,, AutoCollectMoney, %AutoCollectMoney%
+
+    Gui, Add, Text, x20 y75, Auto Align Camera:
+    IniRead, AutoAlignCamera, config.ini, Settings, AutoAlignCamera, 0
+    Gui, Add, Checkbox, vAutoAlignCamera x120 y75
+    GuiControl,, AutoAlignCamera, %AutoAlignCamera%
+
+    Gui, Add, Text, x20 y100, Auto Collect Hit List Rewards:
+    IniRead, AutoHitList, config.ini, Settings, AutoHitList, 0
+    Gui, Add, Checkbox, vAutoHitList x165 y100
+    GuiControl,, AutoHitList, %AutoHitList%
 
     ; === Hotkeys Tab ===
     Gui, Tab, 2
@@ -404,6 +437,8 @@ SaveSettings:
 
     ; Save general to INI
     IniWrite, %AutoCollectMoney%, config.ini, Settings, AutoCollectMoney
+    IniWrite, %AutoAlignCamera%, config.ini, Settings, AutoAlignCamera
+    IniWrite, %AutoHitList%, config.ini, Settings, AutoHitList
 
     ; Save hotkeys to INI
     IniWrite, %StartHotkeyEdit%, config.ini, Settings, StartHotkey
@@ -455,11 +490,13 @@ Return
 AutoCollectMoneyLabel:
     Sleep, 1000
     Tooltip, Collecting Money
-    Click, %backpackBtnX%, %backpackBtnY%
+    IniRead, backpackBtnX, config.ini, Settings, backpackBtnX
+    IniRead, backpackBtnY, config.ini, Settings, backpackBtnY
+    ClickRelative(backpackBtnX, backpackBtnY, 2)
     Sleep, 1000
     ClickRelative(0.541322, 0.58713)
     Sleep, 1000
-    Click, %backpackBtnX%, %backpackBtnY%
+    ClickRelative(backpackBtnX, backpackBtnY, 2)
     Tooltip, Money Collected
     Sleep, 1000
     ClickRelative(0.5, 0.5)
@@ -469,7 +506,7 @@ Return
 
 PlantShopLabel:
     Tooltip, Buying Plants
-    ClickRelative((1836/1936), (456/1056))
+    ClickRelative(1836, 456, 1)
     Sleep, 1000
     ClickRelative(0.5, 0.5)
     Sleep, 1000
@@ -496,17 +533,17 @@ Return
 
 GearShopLabel:
     Tooltip, Buying Gears
-    ClickRelative((1836/1936), (529/1056))
+    ClickRelative(1836, 529, 1)
     Sleep, 1000
     ClickRelative(0.5, 0.5)
     Sleep, 1000
-    Send, {s down}
+    Send, {w down}
     Sleep, 800
-    Send, {s up}
+    Send, {w up}
     Sleep, 250
-    Send, {d down}
+    Send, {a down}
     Sleep, 1100
-    Send, {d up}
+    Send, {a up}
     Sleep, 1000
     Loop, 25 {
         Send, {WheelDown}
@@ -527,4 +564,72 @@ GearShopLabel:
     Sleep, 1000
     Gosub, ClearTooltip
 
+Return
+
+CentralIslandPath:
+    ClickRelative(1836, 529, 1)
+    Sleep, 1000
+    Send, {s down}
+    Sleep, 2000
+    Send, {s up}
+    Sleep, 1000
+    Send, {d down}
+    Sleep, 2000
+    Send, {d up}
+    Sleep, 1000
+Return
+
+AutoAlignCameraLabel:
+    ; First zoom alignment
+    Loop, 25 {
+        Send, {WheelUp}
+        Sleep, 30
+    }
+    Sleep, 1000
+    Loop, 25 {
+        Send, {WheelDown}
+        Sleep, 30
+    }
+    Sleep, 1000
+
+    ; Now align the camera through the central island
+    IniRead, AutoAlignCamera, config.ini, Settings, AutoAlignCamera
+    if (AutoAlignCamera) {
+        Gosub, CentralIslandPath
+        Sleep, 1000
+        ClickRelative(1836, 529, 1)
+    }
+    
+
+    ; Last, put the camera into a top-down view
+    ClickRelative(0.5, .15)
+    Sleep, 500
+    Click, Right, Down
+    Sleep, 250
+    ClickRelative(0.5, 0.5)
+    Sleep, 250
+    Click, Right, Up
+    Sleep, 1000
+Return
+
+HitListLabel:
+    Gosub, CentralIslandPath
+    Sleep, 1000
+    Send, {w down}
+    Sleep, 4000
+    Send, {w up}
+    Sleep, 1000
+    Send, {a down}
+    Sleep, 1500
+    Send, {a up}
+    Sleep, 1000
+
+    Loop, 5 {
+        Send, {E}
+        Sleep, 30
+    }
+    Sleep, 1000
+
+    ClickRelative(1836, 529, 1)
+    Sleep, 1000
 Return
