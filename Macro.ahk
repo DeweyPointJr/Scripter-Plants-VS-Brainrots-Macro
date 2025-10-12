@@ -79,20 +79,25 @@ ClickRelative(relX, relY, coord := 0) {
     SendMode Input
 }
 
-CheckForUpdate() { 
-    currentVersion := "Cards1.1" ; <-- Set your current version here 
-    latestURL := "https://api.github.com/repos/DeweyPointJr/Scripter-Plants-VS-Brainrots-Macro/releases/latest" 
-    whr := ComObjCreate("WinHttp.WinHttpRequest.5.1") 
-    whr.Open("GET", latestURL, false) 
-    whr.Send() 
-    whr.WaitForResponse() 
-    status := whr.Status + 0 
-    if (status != 200) { 
-        MsgBox, Failed to fetch release info. Status: %status% return 
-    } 
-    json := whr.ResponseText 
-    RegExMatch(json, """tag_name"":\s*""([^""]+)""", m) 
+CheckForUpdate() {
+    currentVersion := "Cards1.2" ; <-- Set your current version here
+    latestURL := "https://api.github.com/repos/DeweyPointJr/Scripter-Plants-VS-Brainrots-Macro/releases/latest"
+
+    whr := ComObjCreate("WinHttp.WinHttpRequest.5.1")
+    whr.Open("GET", latestURL, false)
+    whr.Send()
+    whr.WaitForResponse()
+    status := whr.Status + 0
+
+    if (status != 200) {
+        MsgBox, Failed to fetch release info. Status: %status%
+        return
+    }
+
+    json := whr.ResponseText
+    RegExMatch(json, """tag_name"":\s*""([^""]+)""", m)
     latestVersion := m1
+
     if (latestVersion = "") {
         MsgBox, Could not find latest version in response.
         return
@@ -108,38 +113,47 @@ CheckForUpdate() {
                 MsgBox, Could not find zipball_url in release JSON.
                 return
             }
+
             whr2 := ComObjCreate("WinHttp.WinHttpRequest.5.1")
             whr2.Open("GET", downloadURL, false)
             whr2.Send()
             whr2.WaitForResponse()
             status2 := whr2.Status + 0
+
             if (status2 != 200) {
                 MsgBox, Failed to download update file. Status: %status2%
                 return
             }
+
             stream := ComObjCreate("ADODB.Stream")
             stream.Type := 1 ; binary
             stream.Open()
             stream.Write(whr2.ResponseBody)
             stream.SaveToFile(A_ScriptDir "\update.zip", 2)
             stream.Close()
+
             ; Extract the update
             RunWait, %ComSpec% /c powershell -Command "Expand-Archive -Force '%A_ScriptDir%\update.zip' '%A_ScriptDir%'",, Hide
 
-            ; Show update log
-            logFile := A_ScriptDir "\updatelog.txt"
-            if FileExist(logFile) {
-                FileRead, updateLog, %logFile%
-                if (updateLog != "")
-                    MsgBox, 64, Update Log, %updateLog%
-            }
-
-            ; Run updater and exit
+            ; Run updater (it will handle the log and file moves)
             Run, %A_ScriptDir%\update.ahk
             ExitApp
         }
+    } else {
+        ; On startup, check if update.ahk has a pending replacement
+        CheckForUpdatedUpdater()
     }
 }
+
+; --- Helper function to replace update.ahk safely ---
+CheckForUpdatedUpdater() {
+    updateCandidate := A_ScriptDir "\update_files\update.ahk"
+    if FileExist(updateCandidate) {
+        FileMove, %updateCandidate%, %A_ScriptDir%\update.ahk, 1
+        FileRemoveDir, %A_ScriptDir%\update_files, 1
+    }
+}
+
 
 CheckForUpdate()
 
