@@ -80,7 +80,7 @@ ClickRelative(relX, relY, coord := 0) {
 }
 
 CheckForUpdate() { 
-    currentVersion := "Cards1.0" ; <-- Set your current version here 
+    currentVersion := "Cards1.1" ; <-- Set your current version here 
     latestURL := "https://api.github.com/repos/DeweyPointJr/Scripter-Plants-VS-Brainrots-Macro/releases/latest" 
     whr := ComObjCreate("WinHttp.WinHttpRequest.5.1") 
     whr.Open("GET", latestURL, false) 
@@ -626,6 +626,8 @@ HitListLabel:
 
     Loop, 5 {
         Send, {E}
+        Sleep, 30
+        ClickRelative(1343, 485, 1)
         Sleep, 30
     }
     Sleep, 1000

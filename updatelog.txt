@@ -1,5 +1,4 @@
-Version Cards1.0
+Version Cards1.1
 
 Additions:
- - Added auto Hit List
- - Added auto align camera
+ - Made auto hit list also restart the track
